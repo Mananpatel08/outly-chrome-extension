@@ -168,7 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnCalc) btnCalc.textContent = 'Calculate Leaving Time';
     
     // Update select if triggered programmatically
-    devSelect.value = state;
+    if (devSelect) {
+      devSelect.value = state;
+    }
 
     switch(state) {
       case 'setup':
@@ -268,9 +270,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Event Listeners
-  devSelect.addEventListener('change', (e) => {
-    setUIState(e.target.value);
-  });
+  if (devSelect) {
+    devSelect.addEventListener('change', (e) => {
+      setUIState(e.target.value);
+    });
+  }
 
   segments.forEach(seg => {
     seg.addEventListener('click', (e) => {

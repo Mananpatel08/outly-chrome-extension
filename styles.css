@@ -248,7 +248,6 @@ body {
 }
 
 .auth-title {
-  font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   font-size: 28px;
   font-weight: 500;
   margin-bottom: var(--s-2);
@@ -321,7 +320,17 @@ body {
 
 .input-field:focus {
   border-color: var(--c-primary);
-  box-shadow: 0 0 0 3px var(--c-focus-ring);
+  box-shadow: 0 0 0 1px var(--c-focus-ring);
+}
+
+/* Hide spin buttons for number inputs */
+.input-field[type="number"]::-webkit-outer-spin-button,
+.input-field[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.input-field[type="number"] {
+  -moz-appearance: textfield;
 }
 
 .text-center {
@@ -330,10 +339,10 @@ body {
 
 /* Buttons */
 .btn-primary {
-  background-color: var(--c-primary);
-  color: white;
+  background-color: var(--c-text-main);
+  color: var(--c-bg);
   border: none;
-  padding: 16px var(--s-4);
+  padding: 14px var(--s-4);
   font-family: inherit;
   font-size: 15px;
   font-weight: 600;
@@ -344,23 +353,19 @@ body {
   align-items: center;
   justify-content: center;
   gap: var(--s-2);
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
 }
 
 .btn-primary:hover {
-  background-color: var(--c-primary-hover);
-  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
+  opacity: 0.9;
   transform: translateY(-1px);
 }
 
 .btn-primary:active {
-  background-color: var(--c-primary-active);
   transform: translateY(1px);
-  box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
 }
 
 .btn-primary:focus-visible {
-  outline: 2px solid var(--c-primary);
+  outline: 2px solid var(--c-text-main);
   outline-offset: 2px;
 }
 
@@ -526,9 +531,9 @@ body {
 }
 
 .date-pill.active {
-  background-color: var(--c-primary);
-  color: white;
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+  background-color: var(--c-text-main);
+  color: var(--c-bg);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .date-pill .date-day {
@@ -539,7 +544,7 @@ body {
 }
 
 .date-pill.active .date-day {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--c-bg);
 }
 
 .date-pill .date-num {
@@ -549,7 +554,7 @@ body {
 }
 
 .date-pill.active .date-num {
-  color: white;
+  color: var(--c-bg);
 }
 
 .calendar-icon-btn {
@@ -603,9 +608,20 @@ body {
 }
 
 .segment.active {
+  background-color: var(--c-text-main);
+  color: var(--c-bg);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+[data-theme="dark"] .segment.active {
   background-color: var(--c-surface);
   color: var(--c-text-main);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .segment.active {
+    background-color: var(--c-surface);
+    color: var(--c-text-main);
+  }
 }
 
 /* Short Leave Duration */
