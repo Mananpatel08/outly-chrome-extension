@@ -132,9 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     `,
     halfDaySuccess: `
       <div class="success-card">
-        <div class="success-icon" style="font-size: 40px; background: transparent; height: auto; margin-bottom: 8px;">
-          🎉
-        </div>
         <h3 class="success-title">Your time is completed!</h3>
         <p class="success-desc">You're free to go — RUN!!</p>
         
@@ -199,6 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnCalc) btnCalc.textContent = 'Recalculate Leaving Time';
         resultArea.innerHTML = templates.halfDaySuccess;
         resultArea.style.display = 'block';
+        fireConfetti();
         break;
       case 'short-leave-input':
         header.style.display = 'flex';
@@ -267,6 +265,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }, 50);
+  }
+
+  function fireConfetti() {
+    const colors = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#1E293B', '#FDE68A']; // Bean colors
+    const successCard = document.querySelector('.success-card');
+    
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement('div');
+      confetti.classList.add('confetti-piece');
+      confetti.style.left = Math.random() * 100 + '%';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
+      confetti.style.animationDelay = (Math.random() * 0.5) + 's';
+      if (successCard) {
+        successCard.appendChild(confetti);
+      }
+
+      // Clean up DOM after animation
+      setTimeout(() => {
+        if (confetti && confetti.parentNode) {
+          confetti.parentNode.removeChild(confetti);
+        }
+      }, 4000);
+    }
   }
 
   // Event Listeners
