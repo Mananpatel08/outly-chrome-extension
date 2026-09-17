@@ -709,13 +709,6 @@ body {
   overflow: hidden;
 }
 
-.result-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--c-primary), var(--c-arc-1));
-}
 
 .result-label {
   font-size: 11px;
@@ -735,14 +728,15 @@ body {
 }
 
 .deduction-badge {
+  margin-top: 10px;
   display: inline-block;
   background-color: var(--c-bg);
   color: var(--c-text-secondary);
   font-size: 10px;
   font-weight: 600;
   padding: 4px 8px;
-  border-radius: var(--r-full);
-  margin-bottom: var(--s-4);
+  border-radius: var(--r-md);
+  margin-bottom: var(--s-3);
   letter-spacing: 0.05em;
   border: 1px solid var(--c-border);
 }
@@ -968,7 +962,7 @@ body {
 .success-title {
   font-family: 'Quicksand', sans-serif;
   font-size: 32px;
-  font-weight: 300;
+  font-weight: 400;
   color: var(--c-text-main);
   margin-bottom: var(--s-3);
   letter-spacing: 0.02em;
