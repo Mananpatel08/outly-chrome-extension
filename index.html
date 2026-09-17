@@ -121,10 +121,31 @@
               <span class="date-num">16</span>
             </button>
           </div>
-          <button class="calendar-icon-btn" id="btn-open-calendar" aria-label="Pick date" style="position: relative;">
-            <input type="date" id="native-date-picker" style="position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; border: none; padding: 0;" />
+          <button class="calendar-icon-btn" id="btn-open-calendar" aria-label="Pick date">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
           </button>
+          
+          <!-- Custom Calendar Popup -->
+          <div class="calendar-popup" id="custom-calendar-popup" style="display: none;">
+            <div class="calendar-header">
+              <button class="cal-nav-btn" id="cal-prev-month">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              <div class="cal-month-year" id="cal-month-year">September 2026</div>
+              <button class="cal-nav-btn" id="cal-next-month">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+            <div class="calendar-grid">
+              <div class="cal-day-name">Su</div>
+              <div class="cal-day-name">Mo</div>
+              <div class="cal-day-name">Tu</div>
+              <div class="cal-day-name">We</div>
+              <div class="cal-day-name">Th</div>
+              <div class="cal-day-name">Fr</div>
+              <div class="cal-day-name">Sa</div>
+            </div>
+          </div>
         </div>
 
         <div class="leave-type-section">

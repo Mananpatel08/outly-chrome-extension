@@ -641,6 +641,7 @@ body {
   margin-bottom: var(--s-5);
   box-shadow: var(--shadow-sm);
   gap: 8px;
+  position: relative;
 }
 
 .date-picker-scroll {
@@ -666,6 +667,7 @@ body {
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
 
 .date-pill:hover {
@@ -697,6 +699,20 @@ body {
 
 .date-pill.active .date-num {
   color: var(--c-bg);
+}
+
+.date-pill.today::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--c-primary);
+}
+
+.date-pill.active.today::after {
+  background-color: var(--c-bg);
 }
 
 .calendar-icon-btn {
@@ -1254,4 +1270,89 @@ body {
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.92); }
   to { opacity: 1; transform: scale(1); }
+}
+
+/* Custom Date Picker Popup */
+.calendar-popup {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background-color: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lg);
+  padding: 16px;
+  z-index: 50;
+  width: 280px;
+}
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.cal-nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--c-text-secondary);
+  padding: 4px;
+  border-radius: var(--r-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--t-fast);
+}
+.cal-nav-btn:hover {
+  background-color: var(--c-bg);
+  color: var(--c-text-main);
+}
+.cal-month-year {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--c-text-main);
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+.cal-day-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-text-secondary);
+  margin-bottom: 4px;
+}
+.cal-date {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-main);
+  border-radius: var(--r-full);
+  cursor: pointer;
+  margin: 0 auto;
+  transition: all var(--t-fast);
+}
+.cal-date:hover:not(.empty) {
+  background-color: var(--c-bg);
+}
+.cal-date.active {
+  background-color: var(--c-primary);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+.cal-date.today:not(.active) {
+  color: var(--c-primary);
+  font-weight: 700;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+.cal-date.empty {
+  cursor: default;
 }

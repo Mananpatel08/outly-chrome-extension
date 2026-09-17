@@ -340,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
   selectedDate.setHours(0, 0, 0, 0);
   
   const datePickerScroll = document.querySelector('.date-picker-scroll');
-  const nativeDatePicker = document.getElementById('native-date-picker');
 
   function renderDatePills(centerDate) {
     if (!datePickerScroll) return;
@@ -353,9 +352,10 @@ document.addEventListener('DOMContentLoaded', () => {
       d.setDate(d.getDate() + i);
       
       const isSelected = d.getTime() === selectedDate.getTime();
+      const isToday = d.toDateString() === new Date().toDateString();
       
       const btn = document.createElement('button');
-      btn.className = 'date-pill' + (isSelected ? ' active' : '');
+      btn.className = 'date-pill' + (isSelected ? ' active' : '') + (isToday ? ' today' : '');
       btn.innerHTML = `
         <span class="date-day">${days[d.getDay()]}</span>
         <span class="date-num">${d.getDate()}</span>
@@ -364,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.addEventListener('click', () => {
         selectedDate = new Date(d);
         renderDatePills(selectedDate);
-        nativeDatePicker.value = selectedDate.toISOString().split('T')[0];
         // Automatically hide result area when date changes
         resultArea.style.display = 'none';
         document.getElementById('empty-state-box').style.display = 'flex';
@@ -375,16 +374,96 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  if (nativeDatePicker) {
-    nativeDatePicker.value = selectedDate.toISOString().split('T')[0];
-    nativeDatePicker.addEventListener('change', (e) => {
-      if (e.target.value) {
-        selectedDate = new Date(e.target.value);
+  // Custom Calendar Popup Logic
+  const btnOpenCalendar = document.getElementById('btn-open-calendar');
+  const calendarPopup = document.getElementById('custom-calendar-popup');
+  const calMonthYear = document.getElementById('cal-month-year');
+  const calGrid = document.querySelector('.calendar-grid');
+  
+  let currentCalMonth = selectedDate.getMonth();
+  let currentCalYear = selectedDate.getFullYear();
+
+  function renderCalendar(month, year) {
+    if (!calGrid) return;
+    
+    // Clear old dates (keep the day names)
+    const dayNames = Array.from(calGrid.querySelectorAll('.cal-day-name'));
+    calGrid.innerHTML = '';
+    dayNames.forEach(n => calGrid.appendChild(n));
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    if (calMonthYear) {
+      calMonthYear.textContent = `${monthNames[month]} ${year}`;
+    }
+
+    // Empty spots
+    for (let i = 0; i < firstDay; i++) {
+      const empty = document.createElement('div');
+      empty.className = 'cal-date empty';
+      calGrid.appendChild(empty);
+    }
+
+    // Days
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dayEl = document.createElement('div');
+      dayEl.className = 'cal-date';
+      dayEl.textContent = i;
+      
+      if (year === new Date().getFullYear() && month === new Date().getMonth() && i === new Date().getDate()) {
+        dayEl.classList.add('today');
+      }
+      if (year === selectedDate.getFullYear() && month === selectedDate.getMonth() && i === selectedDate.getDate()) {
+        dayEl.classList.add('active');
+      }
+
+      dayEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedDate = new Date(year, month, i);
         selectedDate.setHours(0, 0, 0, 0);
         renderDatePills(selectedDate);
         resultArea.style.display = 'none';
         document.getElementById('empty-state-box').style.display = 'flex';
         document.getElementById('fetch-error-box').style.display = 'none';
+        calendarPopup.style.display = 'none';
+      });
+      calGrid.appendChild(dayEl);
+    }
+  }
+
+  if (btnOpenCalendar && calendarPopup) {
+    btnOpenCalendar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isShowing = calendarPopup.style.display === 'block';
+      if (!isShowing) {
+        currentCalMonth = selectedDate.getMonth();
+        currentCalYear = selectedDate.getFullYear();
+        renderCalendar(currentCalMonth, currentCalYear);
+        calendarPopup.style.display = 'block';
+      } else {
+        calendarPopup.style.display = 'none';
+      }
+    });
+
+    document.getElementById('cal-prev-month').addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentCalMonth--;
+      if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+      renderCalendar(currentCalMonth, currentCalYear);
+    });
+
+    document.getElementById('cal-next-month').addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentCalMonth++;
+      if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+      renderCalendar(currentCalMonth, currentCalYear);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!calendarPopup.contains(e.target) && !btnOpenCalendar.contains(e.target)) {
+        calendarPopup.style.display = 'none';
       }
     });
   }
