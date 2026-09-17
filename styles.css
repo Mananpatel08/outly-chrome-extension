@@ -149,7 +149,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--s-3) var(--s-4);
+  padding: var(--s-2) var(--s-4);
   border-bottom: 1px solid var(--c-border);
   background-color: var(--c-surface);
   flex-shrink: 0;
