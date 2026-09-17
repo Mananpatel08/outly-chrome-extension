@@ -389,6 +389,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Profile Dropdown Toggle
+  const btnProfileTrigger = document.getElementById('btn-profile-trigger');
+  const profileDropdown = document.getElementById('profile-dropdown');
+  
+  if (btnProfileTrigger && profileDropdown) {
+    btnProfileTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      profileDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!profileDropdown.contains(e.target)) {
+        profileDropdown.classList.remove('show');
+      }
+    });
+
+    profileDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', () => {
+        profileDropdown.classList.remove('show');
+      });
+    });
+  }
+
   // Theme Toggle
   const btnThemeToggle = document.getElementById('btn-theme-toggle');
   if (btnThemeToggle) {
