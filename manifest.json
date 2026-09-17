@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Outly",
+  "version": "1.0.0",
+  "description": "Calculate your leaving time, track breaks, and manage short leaves seamlessly.",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Open Outly"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
