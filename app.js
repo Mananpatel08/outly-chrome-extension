@@ -298,6 +298,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Clear errors on input
+  document.querySelectorAll('.input-field, .time-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      e.target.classList.remove('input-error');
+    });
+  });
+
   segments.forEach(seg => {
     seg.addEventListener('click', (e) => {
       const val = e.target.dataset.value;
@@ -314,8 +321,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Setup Save Button
-  document.getElementById('btn-save-setup').addEventListener('click', () => {
+  // Setup Save Form
+  document.getElementById('setup-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const errorEl = document.getElementById('setup-error');
+    const inputs = form.querySelectorAll('.input-field');
+    
+    // Clear old errors
+    inputs.forEach(input => input.classList.remove('input-error'));
+    
+    if (!form.checkValidity()) {
+      errorEl.style.display = 'block';
+      inputs.forEach(input => {
+        if (!input.validity.valid) {
+          input.classList.add('input-error');
+        }
+      });
+      return;
+    }
+    errorEl.style.display = 'none';
     setUIState('default');
   });
 
@@ -325,6 +350,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if(activeSeg === 'full-day') {
       setUIState('full-day-result');
     } else if(activeSeg === 'short-leave') {
+      const slHours = parseInt(document.getElementById('sl-hours').value) || 0;
+      const slMins = parseInt(document.getElementById('sl-mins').value) || 0;
+      const slError = document.getElementById('sl-error');
+      
+      document.getElementById('sl-hours').classList.remove('input-error');
+      document.getElementById('sl-mins').classList.remove('input-error');
+      
+      if (slHours === 0 && slMins === 0) {
+        slError.style.display = 'block';
+        document.getElementById('sl-hours').classList.add('input-error');
+        document.getElementById('sl-mins').classList.add('input-error');
+        return;
+      }
+      slError.style.display = 'none';
       setUIState('short-leave-result');
     }
   });
@@ -368,6 +407,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  // Set default theme to light
+  document.documentElement.setAttribute('data-theme', 'light');
 
   // Initialize
   setUIState('setup');

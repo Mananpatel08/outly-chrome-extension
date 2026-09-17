@@ -126,28 +126,22 @@
 
 body {
   font-family: var(--font-family);
-  background-color: var(--c-bg); /* matches theme */
+  background-color: var(--c-surface);
   color: var(--c-text-main);
-  /* Center for development if opened in normal browser */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
   margin: 0;
+  padding: 0;
+  width: 340px;
+  height: 540px;
+  overflow: hidden;
 }
 
 /* Extension Shell */
 .app-shell {
-  width: 340px; /* Target Chrome Extension width */
-  height: 600px; /* Fixed height for consistent extension feel */
-  background-color: var(--c-surface);
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--c-border);
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
-  border-radius: var(--r-lg); /* Smooth corners for web preview */
 }
 
 /* Header */
@@ -189,7 +183,7 @@ body {
   color: var(--c-text-secondary);
   background-color: var(--c-bg);
   padding: var(--s-1) 10px;
-  border-radius: var(--r-full);
+  border-radius: var(--r-md);
   border: 1px solid var(--c-border);
 }
 
@@ -247,8 +241,14 @@ body {
   padding-top: var(--s-4);
 }
 
+.auth-logo {
+  display: flex;
+  color: var(--c-primary);
+  margin-bottom: var(--s-4);
+}
+
 .auth-title {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 500;
   margin-bottom: var(--s-2);
   color: var(--c-text-main);
@@ -256,7 +256,7 @@ body {
 }
 
 .auth-subtitle {
-  font-size: 15px;
+  font-size: 13px;
   color: var(--c-text-secondary);
 }
 
@@ -274,7 +274,7 @@ body {
 }
 
 .form-group label {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500; /* Matching the lighter weight of reference */
   color: var(--c-text-main);
 }
@@ -319,8 +319,25 @@ body {
 }
 
 .input-field:focus {
+  outline: 2px solid var(--c-focus-ring);
   border-color: var(--c-primary);
-  box-shadow: 0 0 0 1px var(--c-focus-ring);
+}
+
+.input-error {
+  border-color: var(--c-destructive) !important;
+}
+
+.input-error:focus {
+  outline: 2px solid rgba(255, 59, 48, 0.2) !important;
+}
+
+.error-text {
+  color: var(--c-destructive);
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+  display: none;
+  animation: slideUp 0.2s ease;
 }
 
 /* Hide spin buttons for number inputs */
