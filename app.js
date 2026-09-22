@@ -198,25 +198,41 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Still working
     const h = activeSeg === 'short-leave' ? parseInt(document.getElementById('sl-hours').value) || 0 : 0;
     const m = activeSeg === 'short-leave' ? parseInt(document.getElementById('sl-mins').value) || 0 : 0;
-    const badgeHTML = activeSeg === 'short-leave' 
-      ? `<div class="deduction-badge" style="margin-bottom: 16px;">SHORT LEAVE · ${h}h ${m}m DEDUCTED</div>` 
-      : (activeSeg === 'half-day' ? `<div class="deduction-badge" style="margin-bottom: 16px; background-color: var(--c-warning); color: #fff;">HALF DAY · 4h 30m REQUIRED</div>` : '');
+
+    let statusBannerHTML = '';
+    if (activeSeg === 'short-leave') {
+      statusBannerHTML = `
+        <div class="status-banner status-banner--short">
+          <span class="status-banner__label">Short Leave</span>
+          <span class="status-banner__sep">·</span>
+          <span class="status-banner__value">${h}h ${m}m deducted</span>
+        </div>`;
+    } else if (activeSeg === 'half-day') {
+      statusBannerHTML = `
+        <div class="status-banner status-banner--half">
+          <span class="status-banner__label">Half-Day Leave</span>
+          <span class="status-banner__sep">·</span>
+          <span class="status-banner__value">4h 30m required</span>
+        </div>`;
+    }
 
     const breakMins = parseHMToMins(breakTime);
     const breakPct = Math.min(100, (breakMins / 60) * 100);
 
     resultArea.innerHTML = `
-      <div class="result-card" style="padding-top: 48px; position: relative;">
-        <div class="arc-top-stat" style="left: 20px; text-align: start;">
-          <div class="arc-stat-val">${worked.replace(':', 'h ')}m</div>
-          <div class="arc-stat-label">Worked</div>
-        </div>
-        <div class="arc-top-stat" style="right: 20px; text-align: right;">
-          <div class="arc-stat-val">${remaining.replace(':', 'h ')}m</div>
-          <div class="arc-stat-label">Left</div>
+      <div class="result-card" style="padding-top: ${statusBannerHTML ? '0' : '24px'}; position: relative; ${statusBannerHTML ? 'overflow: hidden;' : ''}">
+        ${statusBannerHTML}
+        <div class="arc-stats-row">
+          <div class="arc-top-stat" style="text-align: start;">
+            <div class="arc-stat-val">${worked.replace(':', 'h ')}m</div>
+            <div class="arc-stat-label">Worked</div>
+          </div>
+          <div class="arc-top-stat" style="text-align: right;">
+            <div class="arc-stat-val">${remaining.replace(':', 'h ')}m</div>
+            <div class="arc-stat-label">Left</div>
+          </div>
         </div>
 
         <div class="arc-progress-wrapper">
@@ -236,8 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="result-label" style="margin-bottom: 0;">LEAVING TIME</div>
           </div>
         </div>
-        
-        ${badgeHTML}
         
         <div class="metrics-cards-single">
           <div class="metric-card-new">

@@ -885,18 +885,61 @@ body {
   margin-bottom: var(--s-4);
 }
 
-.deduction-badge {
-  margin-top: 10px;
-  display: inline-block;
-  background-color: var(--c-bg);
-  color: var(--c-text-secondary);
-  font-size: 10px;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: var(--r-md);
-  margin-bottom: var(--s-3);
-  letter-spacing: 0.05em;
-  border: 1px solid var(--c-border);
+/* Status Banner */
+.status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  margin-bottom: 8px;
+  animation: bannerSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bannerSlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.status-banner__label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.status-banner__sep {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.4;
+}
+
+.status-banner__value {
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.status-banner--half {
+  background: linear-gradient(135deg, #fff7ed, #ffedd5);
+}
+.status-banner--half .status-banner__label,
+.status-banner--half .status-banner__sep {
+  color: #b45309;
+}
+.status-banner--half .status-banner__value {
+  color: #92400e;
+}
+
+.status-banner--short {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+.status-banner--short .status-banner__label,
+.status-banner--short .status-banner__sep {
+  color: #1d4ed8;
+}
+.status-banner--short .status-banner__value {
+  color: #1e40af;
 }
 
 .metrics-grid {
@@ -931,10 +974,18 @@ body {
 }
 
 /* Topside Stats (Worked / Remaining) */
-.arc-top-stat {
-  position: absolute;
-  top: 38px;
+.arc-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0 20px;
+  margin-bottom: -20px;
+  position: relative;
   z-index: 10;
+}
+
+.arc-top-stat {
+  /* no absolute positioning needed */
 }
 
 .arc-stat-val {
