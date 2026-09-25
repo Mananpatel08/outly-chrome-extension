@@ -1407,3 +1407,99 @@ body {
 .cal-date.empty {
   cursor: default;
 }
+
+/* Timeline Row component */
+.timeline-container {
+  padding: 0;
+}
+
+.tl-row-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tl-r-time {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  /* border-radius: var(--r-md); */
+  /* background: var(--c-bg); */
+  /* border: 1px solid var(--c-border); */
+  color: var(--c-text-main);
+  min-width: 60px;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+.tl-r-time.pending {
+  color: var(--c-text-muted);
+  /* border: 1px dashed var(--c-border); */
+  background: transparent;
+}
+
+.tl-r-connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+  position: relative;
+  min-height: 30px; /* give some room for text above */
+}
+
+.tl-r-dur {
+  font-size: 9px;
+  font-weight: 400;
+  color: var(--c-text-muted);
+  background: transparent;
+  padding: 0;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.tl-r-line {
+  position: absolute;
+  top: 60%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 0;
+  border-top: 2px dotted var(--c-border);
+  opacity: 0.5;
+  z-index: 1;
+}
+
+/* Arrow head at the end of the line */
+.tl-r-line::after {
+  content: '';
+  position: absolute;
+  right: -3px;
+  top: -4px; /* Adjust based on border size */
+  border-left: 4px solid var(--c-border);
+  border-top: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+}
+
+.tl-row.tl-break .tl-r-line {
+  border-top: 2px dotted var(--c-border);
+  opacity: 0.3;
+}
+.tl-row.tl-break .tl-r-line::after {
+  border-left-color: var(--c-border);
+}
+
+.tl-break-label{
+  padding-bottom: 6px;
+}
+
+/* Active line is now exactly the same as the others for a uniform minimalist look */

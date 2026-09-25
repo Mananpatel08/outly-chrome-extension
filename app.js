@@ -1,20 +1,20 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   // DOM Elements
-  const header = document.getElementById('main-header');
-  const screenSetup = document.getElementById('screen-setup');
-  const screenMain = document.getElementById('screen-main');
-  const shortLeaveInputArea = document.getElementById('short-leave-input-area');
-  const resultArea = document.getElementById('result-area');
-  const actionSection = document.querySelector('.action-section');
-  
-  const resetModal = document.getElementById('reset-modal');
-  const btnShowReset = document.getElementById('btn-show-reset');
-  const btnCancelReset = document.getElementById('btn-cancel-reset');
-  const btnConfirmReset = document.getElementById('btn-confirm-reset');
-  
-  const segments = document.querySelectorAll('.segment');
-  
-  const devSelect = document.getElementById('dev-state-select');
+  const header = document.getElementById("main-header");
+  const screenSetup = document.getElementById("screen-setup");
+  const screenMain = document.getElementById("screen-main");
+  const shortLeaveInputArea = document.getElementById("short-leave-input-area");
+  const resultArea = document.getElementById("result-area");
+  const actionSection = document.querySelector(".action-section");
+
+  const resetModal = document.getElementById("reset-modal");
+  const btnShowReset = document.getElementById("btn-show-reset");
+  const btnCancelReset = document.getElementById("btn-cancel-reset");
+  const btnConfirmReset = document.getElementById("btn-confirm-reset");
+
+  const segments = document.querySelectorAll(".segment");
+
+  const devSelect = document.getElementById("dev-state-select");
 
   // Time Utilities
   function getFirstClockIn(str) {
@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function calculateBreakTime(str) {
     if (!str) return "0:00";
-    const regex = /(\d{1,2}\s+[A-Za-z]{3}\s+)(\d{1,2}:\d{2})\s+-\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{1,2}:\d{2}|\d{2}:\d{2})/g;
+    const regex =
+      /(\d{1,2}\s+[A-Za-z]{3}\s+)(\d{1,2}:\d{2})\s+-\s+(\d{1,2}\s+[A-Za-z]{3}\s+\d{1,2}:\d{2}|\d{2}:\d{2})/g;
     const entries = [];
     let m;
     while ((m = regex.exec(str)) !== null) {
@@ -76,14 +77,104 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
 
+  // Parse TimeEntry string into punch sessions
+  function parseTimeEntries(str) {
+    if (!str) return [];
+    const sessions = str
+      .split("<br/>")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const entries = [];
+    for (const session of sessions) {
+      const parts = session.split(" - ");
+      if (parts.length < 2) continue;
+      const inMatch = parts[0].trim().match(/(\d{1,2}:\d{2})$/);
+      const outMatch = parts[1].trim().match(/(\d{1,2}:\d{2})$/);
+      if (inMatch && outMatch) {
+        entries.push({ inTime: inMatch[1], outTime: outMatch[1] });
+      }
+    }
+    return entries;
+  }
+
+  // Build timeline HTML from parsed entries
+  function buildTimelineHTML(timeEntryStr, isToday) {
+    const entries = parseTimeEntries(timeEntryStr);
+    if (entries.length === 0) return "";
+    let rows = "";
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      const inMins = colonToMins(e.inTime);
+      const outMins = colonToMins(e.outTime);
+      const isActive =
+        isToday && (e.outTime === "0:00" || e.outTime === "00:00");
+      let durLabel;
+      if (isActive) {
+        const now = new Date();
+        const nowMins = now.getHours() * 60 + now.getMinutes();
+        const dur = Math.max(0, nowMins - inMins);
+        durLabel =
+          dur > 0 ? formatMins(dur).replace(":", "h ") + "m" : "Just now";
+      } else if (inMins !== null && outMins !== null && outMins > inMins) {
+        const dur = outMins - inMins;
+        durLabel = formatMins(dur).replace(":", "h ") + "m";
+      } else {
+        durLabel = "--";
+      }
+      rows += `
+        <div class="tl-row tl-work">
+          <span class="tl-r-time">${e.inTime}</span>
+          <div class="tl-r-connector">
+            <span class="tl-r-dur">${durLabel}</span>
+            <div class="tl-r-line"></div>
+          </div>
+          <span class="tl-r-time${isActive ? " pending" : ""}">${isActive ? "now" : e.outTime}</span>
+        </div>`;
+
+      // Add break label between consecutive sessions
+      if (i < entries.length - 1) {
+        const nextIn = colonToMins(entries[i + 1].inTime);
+        const curOut = isActive ? null : outMins;
+
+        if (curOut !== null && nextIn !== null && nextIn > curOut) {
+          const breakDur = nextIn - curOut;
+
+          let breakLabel;
+
+          if (breakDur < 60) {
+            breakLabel = `${breakDur}m break`;
+          } else {
+            const hours = Math.floor(breakDur / 60);
+            const minutes = breakDur % 60;
+
+            breakLabel =
+              minutes > 0 ? `${hours}h ${minutes}m break` : `${hours}h break`;
+          }
+
+          rows += `
+              <div class="tl-break-label">
+                ${breakLabel}
+              </div>
+            `;
+        }
+      }
+    }
+    return `
+      <div class="timeline-container" style="margin-top: 24px; border-top: 1px solid var(--c-border); padding-top: 16px;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--c-text-muted); letter-spacing: 0.05em; margin-bottom: 12px;">TODAY'S LOGS</div>
+        <div class="tl-row-container">${rows}
+        </div>
+      </div>`;
+  }
+
   const FULL_REQUIRED = 8.5 * 60;
   const HALF_REQUIRED = 4.5 * 60;
 
   function getRequiredMins(activeSeg) {
-    if (activeSeg === 'half-day') return HALF_REQUIRED;
-    if (activeSeg === 'short-leave') {
-      const h = parseInt(document.getElementById('sl-hours').value) || 0;
-      const m = parseInt(document.getElementById('sl-mins').value) || 0;
+    if (activeSeg === "half-day") return HALF_REQUIRED;
+    if (activeSeg === "short-leave") {
+      const h = parseInt(document.getElementById("sl-hours").value) || 0;
+      const m = parseInt(document.getElementById("sl-mins").value) || 0;
       return Math.max(0, FULL_REQUIRED - (h * 60 + m));
     }
     return FULL_REQUIRED;
@@ -92,88 +183,101 @@ document.addEventListener('DOMContentLoaded', () => {
   // Switcher Logic for Demo
   function setUIState(state) {
     // Reset everything
-    header.style.display = 'none';
-    screenSetup.style.display = 'none';
-    screenMain.style.display = 'none';
-    shortLeaveInputArea.style.display = 'none';
-    resultArea.style.display = 'none';
-    resultArea.innerHTML = '';
-    actionSection.style.display = 'flex'; // changed to flex
-    const emptyBox = document.getElementById('empty-state-box');
-    if (emptyBox) emptyBox.style.display = 'flex';
-    const fetchErrorBox = document.getElementById('fetch-error-box');
-    if (fetchErrorBox) fetchErrorBox.style.display = 'none';
-    const btnCalc = document.getElementById('btn-calculate');
-    if (btnCalc) btnCalc.textContent = 'Calculate Leaving Time';
-    
+    header.style.display = "none";
+    screenSetup.style.display = "none";
+    screenMain.style.display = "none";
+    shortLeaveInputArea.style.display = "none";
+    resultArea.style.display = "none";
+    resultArea.innerHTML = "";
+    actionSection.style.display = "flex"; // changed to flex
+    const emptyBox = document.getElementById("empty-state-box");
+    if (emptyBox) emptyBox.style.display = "flex";
+    const fetchErrorBox = document.getElementById("fetch-error-box");
+    if (fetchErrorBox) fetchErrorBox.style.display = "none";
+    const btnCalc = document.getElementById("btn-calculate");
+    if (btnCalc) btnCalc.textContent = "Calculate Leaving Time";
+
     // Update select if triggered programmatically
     if (devSelect) {
       devSelect.value = state;
     }
 
-    switch(state) {
-      case 'setup':
-        screenSetup.style.display = 'flex';
+    switch (state) {
+      case "setup":
+        screenSetup.style.display = "flex";
         break;
-      case 'default':
-        header.style.display = 'flex';
-        screenMain.style.display = 'flex';
-        setActiveSegment('full-day');
+      case "default":
+        header.style.display = "flex";
+        screenMain.style.display = "flex";
+        setActiveSegment("full-day");
         break;
-      case 'full-day-result':
-        header.style.display = 'flex';
-        screenMain.style.display = 'flex';
-        setActiveSegment('full-day');
-        if (document.getElementById('empty-state-box')) document.getElementById('empty-state-box').style.display = 'none';
-        if (btnCalc) btnCalc.textContent = 'Recalculate Leaving Time';
+      case "full-day-result":
+        header.style.display = "flex";
+        screenMain.style.display = "flex";
+        setActiveSegment("full-day");
+        if (document.getElementById("empty-state-box"))
+          document.getElementById("empty-state-box").style.display = "none";
+        if (btnCalc) btnCalc.textContent = "Recalculate Leaving Time";
         resultArea.innerHTML = templates.fullDayResult;
-        resultArea.style.display = 'block';
+        resultArea.style.display = "block";
         animateProgress(72);
         break;
-      case 'half-day-completed':
-        header.style.display = 'flex';
-        screenMain.style.display = 'flex';
-        setActiveSegment('half-day');
-        if (document.getElementById('empty-state-box')) document.getElementById('empty-state-box').style.display = 'none';
-        if (btnCalc) btnCalc.textContent = 'Recalculate Leaving Time';
+      case "half-day-completed":
+        header.style.display = "flex";
+        screenMain.style.display = "flex";
+        setActiveSegment("half-day");
+        if (document.getElementById("empty-state-box"))
+          document.getElementById("empty-state-box").style.display = "none";
+        if (btnCalc) btnCalc.textContent = "Recalculate Leaving Time";
         resultArea.innerHTML = templates.halfDaySuccess;
-        resultArea.style.display = 'block';
+        resultArea.style.display = "block";
         fireConfetti();
         break;
-      case 'short-leave-input':
-        header.style.display = 'flex';
-        screenMain.style.display = 'flex';
-        setActiveSegment('short-leave');
-        shortLeaveInputArea.style.display = 'block';
+      case "short-leave-input":
+        header.style.display = "flex";
+        screenMain.style.display = "flex";
+        setActiveSegment("short-leave");
+        shortLeaveInputArea.style.display = "block";
         break;
-      case 'short-leave-result':
-        header.style.display = 'flex';
-        screenMain.style.display = 'flex';
-        setActiveSegment('short-leave');
-        shortLeaveInputArea.style.display = 'block';
-        if (document.getElementById('empty-state-box')) document.getElementById('empty-state-box').style.display = 'none';
-        if (btnCalc) btnCalc.textContent = 'Recalculate Leaving Time';
+      case "short-leave-result":
+        header.style.display = "flex";
+        screenMain.style.display = "flex";
+        setActiveSegment("short-leave");
+        shortLeaveInputArea.style.display = "block";
+        if (document.getElementById("empty-state-box"))
+          document.getElementById("empty-state-box").style.display = "none";
+        if (btnCalc) btnCalc.textContent = "Recalculate Leaving Time";
         resultArea.innerHTML = templates.shortLeaveResult;
-        resultArea.style.display = 'block';
+        resultArea.style.display = "block";
         animateProgress(82);
         break;
     }
   }
 
   function setActiveSegment(value) {
-    segments.forEach(seg => {
-      if(seg.dataset.value === value) {
-        seg.classList.add('active');
+    segments.forEach((seg) => {
+      if (seg.dataset.value === value) {
+        seg.classList.add("active");
       } else {
-        seg.classList.remove('active');
+        seg.classList.remove("active");
       }
     });
   }
 
-  function renderResultState(activeSeg, leaveAt, worked, remaining, breakTime, pct, requiredMins) {
-    document.getElementById('empty-state-box').style.display = 'none';
-    document.getElementById('fetch-error-box').style.display = 'none';
-    
+  function renderResultState(
+    activeSeg,
+    leaveAt,
+    worked,
+    remaining,
+    breakTime,
+    pct,
+    requiredMins,
+    timeEntryStr,
+    isToday,
+  ) {
+    document.getElementById("empty-state-box").style.display = "none";
+    document.getElementById("fetch-error-box").style.display = "none";
+
     if (pct >= 100) {
       // Completed!
       resultArea.innerHTML = `
@@ -193,23 +297,29 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
-      resultArea.style.display = 'block';
+      resultArea.style.display = "block";
       fireConfetti();
       return;
     }
 
-    const h = activeSeg === 'short-leave' ? parseInt(document.getElementById('sl-hours').value) || 0 : 0;
-    const m = activeSeg === 'short-leave' ? parseInt(document.getElementById('sl-mins').value) || 0 : 0;
+    const h =
+      activeSeg === "short-leave"
+        ? parseInt(document.getElementById("sl-hours").value) || 0
+        : 0;
+    const m =
+      activeSeg === "short-leave"
+        ? parseInt(document.getElementById("sl-mins").value) || 0
+        : 0;
 
-    let statusBannerHTML = '';
-    if (activeSeg === 'short-leave') {
+    let statusBannerHTML = "";
+    if (activeSeg === "short-leave") {
       statusBannerHTML = `
         <div class="status-banner status-banner--short">
           <span class="status-banner__label">Short Leave</span>
           <span class="status-banner__sep">·</span>
           <span class="status-banner__value">${h}h ${m}m deducted</span>
         </div>`;
-    } else if (activeSeg === 'half-day') {
+    } else if (activeSeg === "half-day") {
       statusBannerHTML = `
         <div class="status-banner status-banner--half">
           <span class="status-banner__label">Half-Day Leave</span>
@@ -222,15 +332,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const breakPct = Math.min(100, (breakMins / 60) * 100);
 
     resultArea.innerHTML = `
-      <div class="result-card" style="padding-top: ${statusBannerHTML ? '0' : '24px'}; position: relative; ${statusBannerHTML ? 'overflow: hidden;' : ''}">
+      <div class="result-card" style="padding-top: ${statusBannerHTML ? "0" : "24px"}; position: relative; ${statusBannerHTML ? "overflow: hidden;" : ""}">
         ${statusBannerHTML}
         <div class="arc-stats-row">
           <div class="arc-top-stat" style="text-align: start;">
-            <div class="arc-stat-val">${worked.replace(':', 'h ')}m</div>
+            <div class="arc-stat-val">${worked.replace(":", "h ")}m</div>
             <div class="arc-stat-label">Worked</div>
           </div>
           <div class="arc-top-stat" style="text-align: right;">
-            <div class="arc-stat-val">${remaining.replace(':', 'h ')}m</div>
+            <div class="arc-stat-val">${remaining.replace(":", "h ")}m</div>
             <div class="arc-stat-label">Left</div>
           </div>
         </div>
@@ -274,35 +384,46 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
         </div>
+        
+        ${buildTimelineHTML(timeEntryStr, isToday)}
+
       </div>
     `;
-    resultArea.style.display = 'block';
-    
+    resultArea.style.display = "block";
+
     // Animate
     setTimeout(() => {
       const total = 125.6;
-      const offset = total - (total * (pct / 100));
-      const arcDynamic = document.getElementById('anim-progress-arc-dynamic');
+      const offset = total - total * (pct / 100);
+      const arcDynamic = document.getElementById("anim-progress-arc-dynamic");
       if (arcDynamic) arcDynamic.style.strokeDashoffset = offset;
-      
-      const breakRing = document.getElementById('anim-ring-break-dynamic');
+
+      const breakRing = document.getElementById("anim-ring-break-dynamic");
       if (breakRing) {
-        breakRing.setAttribute('stroke-dasharray', breakPct + ', 100');
+        breakRing.setAttribute("stroke-dasharray", breakPct + ", 100");
       }
     }, 50);
   }
 
   function fireConfetti() {
-    const colors = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#1E293B', '#FDE68A']; // Bean colors
-    const successCard = document.querySelector('.success-card');
-    
+    const colors = [
+      "#EF4444",
+      "#3B82F6",
+      "#10B981",
+      "#F59E0B",
+      "#1E293B",
+      "#FDE68A",
+    ]; // Bean colors
+    const successCard = document.querySelector(".success-card");
+
     for (let i = 0; i < 50; i++) {
-      const confetti = document.createElement('div');
-      confetti.classList.add('confetti-piece');
-      confetti.style.left = Math.random() * 100 + '%';
-      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-      confetti.style.animationDuration = (Math.random() * 2 + 1.5) + 's';
-      confetti.style.animationDelay = (Math.random() * 0.5) + 's';
+      const confetti = document.createElement("div");
+      confetti.classList.add("confetti-piece");
+      confetti.style.left = Math.random() * 100 + "%";
+      confetti.style.backgroundColor =
+        colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDuration = Math.random() * 2 + 1.5 + "s";
+      confetti.style.animationDelay = Math.random() * 0.5 + "s";
       if (successCard) {
         successCard.appendChild(confetti);
       }
@@ -318,166 +439,197 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event Listeners
   if (devSelect) {
-    devSelect.addEventListener('change', (e) => {
+    devSelect.addEventListener("change", (e) => {
       setUIState(e.target.value);
     });
   }
 
   // Clear errors on input
-  document.querySelectorAll('.input-field, .time-input').forEach(input => {
-    input.addEventListener('input', (e) => {
-      e.target.classList.remove('input-error');
+  document.querySelectorAll(".input-field, .time-input").forEach((input) => {
+    input.addEventListener("input", (e) => {
+      e.target.classList.remove("input-error");
     });
   });
 
-  segments.forEach(seg => {
-    seg.addEventListener('click', (e) => {
+  segments.forEach((seg) => {
+    seg.addEventListener("click", (e) => {
       const val = e.target.dataset.value;
       setActiveSegment(val);
-      
-      if (val === 'short-leave') {
-        shortLeaveInputArea.style.display = 'block';
+
+      if (val === "short-leave") {
+        shortLeaveInputArea.style.display = "block";
       } else {
-        shortLeaveInputArea.style.display = 'none';
+        shortLeaveInputArea.style.display = "none";
       }
-      
-      resultArea.style.display = 'none';
-      const emptyBox = document.getElementById('empty-state-box');
-      if (emptyBox) emptyBox.style.display = 'flex';
-      const fetchErrorBox = document.getElementById('fetch-error-box');
-      if (fetchErrorBox) fetchErrorBox.style.display = 'none';
+
+      resultArea.style.display = "none";
+      const emptyBox = document.getElementById("empty-state-box");
+      if (emptyBox) emptyBox.style.display = "flex";
+      const fetchErrorBox = document.getElementById("fetch-error-box");
+      if (fetchErrorBox) fetchErrorBox.style.display = "none";
     });
   });
 
   // Date Picker Logic
   let selectedDate = new Date();
   selectedDate.setHours(0, 0, 0, 0);
-  
-  const datePickerScroll = document.querySelector('.date-picker-scroll');
+
+  const datePickerScroll = document.querySelector(".date-picker-scroll");
 
   function renderDatePills(centerDate) {
     if (!datePickerScroll) return;
-    datePickerScroll.innerHTML = '';
-    
+    datePickerScroll.innerHTML = "";
+
     // Generate 5 days (2 days before, 1 today, 2 days after)
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
     for (let i = -2; i <= 2; i++) {
       const d = new Date(centerDate);
       d.setDate(d.getDate() + i);
-      
+
       const isSelected = d.getTime() === selectedDate.getTime();
       const isToday = d.toDateString() === new Date().toDateString();
-      
-      const btn = document.createElement('button');
-      btn.className = 'date-pill' + (isSelected ? ' active' : '') + (isToday ? ' today' : '');
+
+      const btn = document.createElement("button");
+      btn.className =
+        "date-pill" + (isSelected ? " active" : "") + (isToday ? " today" : "");
       btn.innerHTML = `
         <span class="date-day">${days[d.getDay()]}</span>
         <span class="date-num">${d.getDate()}</span>
       `;
-      
-      btn.addEventListener('click', () => {
+
+      btn.addEventListener("click", () => {
         selectedDate = new Date(d);
         renderDatePills(selectedDate);
         // Automatically hide result area when date changes
-        resultArea.style.display = 'none';
-        document.getElementById('empty-state-box').style.display = 'flex';
-        document.getElementById('fetch-error-box').style.display = 'none';
+        resultArea.style.display = "none";
+        document.getElementById("empty-state-box").style.display = "flex";
+        document.getElementById("fetch-error-box").style.display = "none";
       });
-      
+
       datePickerScroll.appendChild(btn);
     }
   }
 
   // Custom Calendar Popup Logic
-  const btnOpenCalendar = document.getElementById('btn-open-calendar');
-  const calendarPopup = document.getElementById('custom-calendar-popup');
-  const calMonthYear = document.getElementById('cal-month-year');
-  const calGrid = document.querySelector('.calendar-grid');
-  
+  const btnOpenCalendar = document.getElementById("btn-open-calendar");
+  const calendarPopup = document.getElementById("custom-calendar-popup");
+  const calMonthYear = document.getElementById("cal-month-year");
+  const calGrid = document.querySelector(".calendar-grid");
+
   let currentCalMonth = selectedDate.getMonth();
   let currentCalYear = selectedDate.getFullYear();
 
   function renderCalendar(month, year) {
     if (!calGrid) return;
-    
+
     // Clear old dates (keep the day names)
-    const dayNames = Array.from(calGrid.querySelectorAll('.cal-day-name'));
-    calGrid.innerHTML = '';
-    dayNames.forEach(n => calGrid.appendChild(n));
+    const dayNames = Array.from(calGrid.querySelectorAll(".cal-day-name"));
+    calGrid.innerHTML = "";
+    dayNames.forEach((n) => calGrid.appendChild(n));
 
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
     if (calMonthYear) {
       calMonthYear.textContent = `${monthNames[month]} ${year}`;
     }
 
     // Empty spots
     for (let i = 0; i < firstDay; i++) {
-      const empty = document.createElement('div');
-      empty.className = 'cal-date empty';
+      const empty = document.createElement("div");
+      empty.className = "cal-date empty";
       calGrid.appendChild(empty);
     }
 
     // Days
     for (let i = 1; i <= daysInMonth; i++) {
-      const dayEl = document.createElement('div');
-      dayEl.className = 'cal-date';
+      const dayEl = document.createElement("div");
+      dayEl.className = "cal-date";
       dayEl.textContent = i;
-      
-      if (year === new Date().getFullYear() && month === new Date().getMonth() && i === new Date().getDate()) {
-        dayEl.classList.add('today');
+
+      if (
+        year === new Date().getFullYear() &&
+        month === new Date().getMonth() &&
+        i === new Date().getDate()
+      ) {
+        dayEl.classList.add("today");
       }
-      if (year === selectedDate.getFullYear() && month === selectedDate.getMonth() && i === selectedDate.getDate()) {
-        dayEl.classList.add('active');
+      if (
+        year === selectedDate.getFullYear() &&
+        month === selectedDate.getMonth() &&
+        i === selectedDate.getDate()
+      ) {
+        dayEl.classList.add("active");
       }
 
-      dayEl.addEventListener('click', (e) => {
+      dayEl.addEventListener("click", (e) => {
         e.stopPropagation();
         selectedDate = new Date(year, month, i);
         selectedDate.setHours(0, 0, 0, 0);
         renderDatePills(selectedDate);
-        resultArea.style.display = 'none';
-        document.getElementById('empty-state-box').style.display = 'flex';
-        document.getElementById('fetch-error-box').style.display = 'none';
-        calendarPopup.style.display = 'none';
+        resultArea.style.display = "none";
+        document.getElementById("empty-state-box").style.display = "flex";
+        document.getElementById("fetch-error-box").style.display = "none";
+        calendarPopup.style.display = "none";
       });
       calGrid.appendChild(dayEl);
     }
   }
 
   if (btnOpenCalendar && calendarPopup) {
-    btnOpenCalendar.addEventListener('click', (e) => {
+    btnOpenCalendar.addEventListener("click", (e) => {
       e.stopPropagation();
-      const isShowing = calendarPopup.style.display === 'block';
+      const isShowing = calendarPopup.style.display === "block";
       if (!isShowing) {
         currentCalMonth = selectedDate.getMonth();
         currentCalYear = selectedDate.getFullYear();
         renderCalendar(currentCalMonth, currentCalYear);
-        calendarPopup.style.display = 'block';
+        calendarPopup.style.display = "block";
       } else {
-        calendarPopup.style.display = 'none';
+        calendarPopup.style.display = "none";
       }
     });
 
-    document.getElementById('cal-prev-month').addEventListener('click', (e) => {
+    document.getElementById("cal-prev-month").addEventListener("click", (e) => {
       e.stopPropagation();
       currentCalMonth--;
-      if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+      if (currentCalMonth < 0) {
+        currentCalMonth = 11;
+        currentCalYear--;
+      }
       renderCalendar(currentCalMonth, currentCalYear);
     });
 
-    document.getElementById('cal-next-month').addEventListener('click', (e) => {
+    document.getElementById("cal-next-month").addEventListener("click", (e) => {
       e.stopPropagation();
       currentCalMonth++;
-      if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+      if (currentCalMonth > 11) {
+        currentCalMonth = 0;
+        currentCalYear++;
+      }
       renderCalendar(currentCalMonth, currentCalYear);
     });
 
-    document.addEventListener('click', (e) => {
-      if (!calendarPopup.contains(e.target) && !btnOpenCalendar.contains(e.target)) {
-        calendarPopup.style.display = 'none';
+    document.addEventListener("click", (e) => {
+      if (
+        !calendarPopup.contains(e.target) &&
+        !btnOpenCalendar.contains(e.target)
+      ) {
+        calendarPopup.style.display = "none";
       }
     });
   }
@@ -486,66 +638,69 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDatePills(selectedDate);
 
   // Setup Save Form
-  document.getElementById('setup-form').addEventListener('submit', (e) => {
+  document.getElementById("setup-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const form = e.target;
-    const errorEl = document.getElementById('setup-error');
-    const inputs = form.querySelectorAll('.input-field');
-    
+    const errorEl = document.getElementById("setup-error");
+    const inputs = form.querySelectorAll(".input-field");
+
     // Clear old errors
-    inputs.forEach(input => input.classList.remove('input-error'));
-    
+    inputs.forEach((input) => input.classList.remove("input-error"));
+
     if (!form.checkValidity()) {
-      errorEl.style.display = 'block';
-      inputs.forEach(input => {
+      errorEl.style.display = "block";
+      inputs.forEach((input) => {
         if (!input.validity.valid) {
-          input.classList.add('input-error');
+          input.classList.add("input-error");
         }
       });
       return;
     }
-    errorEl.style.display = 'none';
+    errorEl.style.display = "none";
 
     // Save to localStorage
-    const id = document.getElementById('emp-id').value.trim();
-    const name = document.getElementById('emp-name').value.trim();
-    const code = document.getElementById('emp-code').value.trim();
-    
-    localStorage.setItem('outly_employeeData', JSON.stringify({ id, name, code }));
+    const id = document.getElementById("emp-id").value.trim();
+    const name = document.getElementById("emp-name").value.trim();
+    const code = document.getElementById("emp-code").value.trim();
+
+    localStorage.setItem(
+      "outly_employeeData",
+      JSON.stringify({ id, name, code }),
+    );
     checkEmployeeData();
   });
 
   // Calculate Button
-  document.getElementById('btn-calculate').addEventListener('click', () => {
-    const activeSeg = document.querySelector('.segment.active').dataset.value;
-    
+  document.getElementById("btn-calculate").addEventListener("click", () => {
+    const activeSeg = document.querySelector(".segment.active").dataset.value;
+
     // Short leave validation
-    if (activeSeg === 'short-leave') {
-      const slHours = parseInt(document.getElementById('sl-hours').value) || 0;
-      const slMins = parseInt(document.getElementById('sl-mins').value) || 0;
-      const slError = document.getElementById('sl-error');
-      
-      document.getElementById('sl-hours').classList.remove('input-error');
-      document.getElementById('sl-mins').classList.remove('input-error');
-      
+    if (activeSeg === "short-leave") {
+      const slHours = parseInt(document.getElementById("sl-hours").value) || 0;
+      const slMins = parseInt(document.getElementById("sl-mins").value) || 0;
+      const slError = document.getElementById("sl-error");
+
+      document.getElementById("sl-hours").classList.remove("input-error");
+      document.getElementById("sl-mins").classList.remove("input-error");
+
       if (slHours === 0 && slMins === 0) {
-        slError.style.display = 'block';
-        document.getElementById('sl-hours').classList.add('input-error');
-        document.getElementById('sl-mins').classList.add('input-error');
+        slError.style.display = "block";
+        document.getElementById("sl-hours").classList.add("input-error");
+        document.getElementById("sl-mins").classList.add("input-error");
         return;
       }
-      slError.style.display = 'none';
+      slError.style.display = "none";
     }
 
-    const empStr = localStorage.getItem('outly_employeeData');
+    const empStr = localStorage.getItem("outly_employeeData");
     if (!empStr) {
-      setUIState('setup');
+      setUIState("setup");
       return;
     }
     const emp = JSON.parse(empStr);
 
-    const dd = String(selectedDate.getDate()).padStart(2, '0');
-    const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(selectedDate.getDate()).padStart(2, "0");
+    const mm = String(selectedDate.getMonth() + 1).padStart(2, "0");
     const yyyy = selectedDate.getFullYear();
     const formatted = `${dd}/${mm}/${yyyy}`;
 
@@ -570,162 +725,208 @@ document.addEventListener('DOMContentLoaded', () => {
       pEmployeeCode: emp.code,
     };
 
-    const btnCalc = document.getElementById('btn-calculate');
-    btnCalc.textContent = 'Calculating...';
+    const btnCalc = document.getElementById("btn-calculate");
+    btnCalc.textContent = "Calculating...";
     btnCalc.disabled = true;
-    
-    document.getElementById('empty-state-box').style.display = 'none';
-    document.getElementById('fetch-error-box').style.display = 'none';
+
+    document.getElementById("empty-state-box").style.display = "none";
+    document.getElementById("fetch-error-box").style.display = "none";
 
     fetch("https://office.wedowebapps.in/ess/Emp/Timesheet.aspx/ws_GetData", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest"
+        "X-Requested-With": "XMLHttpRequest",
       },
       body: JSON.stringify(payload),
     })
-    .then((r) => r.json())
-    .then((data) => {
-      btnCalc.textContent = 'Recalculate Leaving Time';
-      btnCalc.disabled = false;
-      
-      const entry = data?.d?.listTimesheet?.[0];
-      const REQUIRED = getRequiredMins(activeSeg);
-      
-      if (!entry) {
-        renderResultState(activeSeg, "N/A", "0:00", formatMins(REQUIRED), "0:00", 0, REQUIRED);
-        return;
-      }
-      
-      const selDay = new Date(selectedDate);
-      const todayDay = new Date();
-      todayDay.setHours(0, 0, 0, 0);
-      selDay.setHours(0, 0, 0, 0);
-      
-      const isToday = selDay.getTime() === todayDay.getTime();
-      const isPastDate = selDay < todayDay;
-      
-      const breakStr = calculateBreakTime(entry.TimeEntry);
-      const breakMins = parseHMToMins(breakStr);
-      
-      if (isToday) {
-        const firstIn = getFirstClockIn(entry.TimeEntry);
-        const now = new Date();
-        const nowMins = now.getHours() * 60 + now.getMinutes();
+      .then((r) => r.json())
+      .then((data) => {
+        btnCalc.textContent = "Recalculate Leaving Time";
+        btnCalc.disabled = false;
 
-        let workedMins = 0;
-        if (firstIn !== null) {
-          workedMins = Math.max(0, nowMins - firstIn - breakMins);
+        const entry = data?.d?.listTimesheet?.[0];
+
+        console.log("RAW TimeEntry:", entry.TimeEntry);
+
+        const REQUIRED = getRequiredMins(activeSeg);
+
+        if (!entry) {
+          renderResultState(
+            activeSeg,
+            "N/A",
+            "0:00",
+            formatMins(REQUIRED),
+            "0:00",
+            0,
+            REQUIRED,
+            null,
+            false,
+          );
+          return;
         }
 
-        const remainMins = Math.max(0, REQUIRED - workedMins);
-        const leaveAtMins = nowMins + remainMins;
-        
-        renderResultState(activeSeg, minsToTimeStr(leaveAtMins), formatMins(workedMins), formatMins(remainMins), breakStr, Math.min(100, (workedMins / REQUIRED) * 100), REQUIRED);
-      } else if (isPastDate) {
-        const workedStr = entry.TotalTimeHM || "0:00";
-        const workedMins = parseHMToMins(workedStr);
-        renderResultState(activeSeg, "-", workedStr, "-", breakStr, Math.min(100, (workedMins / REQUIRED) * 100), REQUIRED);
-      } else {
-        renderResultState(activeSeg, "N/A", "0:00", formatMins(REQUIRED), "0:00", 0, REQUIRED);
-      }
-    })
-    .catch((err) => {
-      console.error(err);
-      btnCalc.textContent = 'Calculate Leaving Time';
-      btnCalc.disabled = false;
-      document.getElementById('empty-state-box').style.display = 'none';
-      document.getElementById('fetch-error-box').style.display = 'flex';
-    });
+        const selDay = new Date(selectedDate);
+        const todayDay = new Date();
+        todayDay.setHours(0, 0, 0, 0);
+        selDay.setHours(0, 0, 0, 0);
+
+        const isToday = selDay.getTime() === todayDay.getTime();
+        const isPastDate = selDay < todayDay;
+
+        const breakStr = calculateBreakTime(entry.TimeEntry);
+        const breakMins = parseHMToMins(breakStr);
+
+        if (isToday) {
+          const firstIn = getFirstClockIn(entry.TimeEntry);
+          const now = new Date();
+          const nowMins = now.getHours() * 60 + now.getMinutes();
+
+          let workedMins = 0;
+          if (firstIn !== null) {
+            workedMins = Math.max(0, nowMins - firstIn - breakMins);
+          }
+
+          const remainMins = Math.max(0, REQUIRED - workedMins);
+          const leaveAtMins = nowMins + remainMins;
+
+          renderResultState(
+            activeSeg,
+            minsToTimeStr(leaveAtMins),
+            formatMins(workedMins),
+            formatMins(remainMins),
+            breakStr,
+            Math.min(100, (workedMins / REQUIRED) * 100),
+            REQUIRED,
+            entry.TimeEntry,
+            true,
+          );
+        } else if (isPastDate) {
+          const workedStr = entry.TotalTimeHM || "0:00";
+          const workedMins = parseHMToMins(workedStr);
+          renderResultState(
+            activeSeg,
+            "-",
+            workedStr,
+            "-",
+            breakStr,
+            Math.min(100, (workedMins / REQUIRED) * 100),
+            REQUIRED,
+            entry.TimeEntry,
+            false,
+          );
+        } else {
+          renderResultState(
+            activeSeg,
+            "N/A",
+            "0:00",
+            formatMins(REQUIRED),
+            "0:00",
+            0,
+            REQUIRED,
+            null,
+            false,
+          );
+        }
+      })
+      .catch((err) => {
+        console.error(err);
+        btnCalc.textContent = "Calculate Leaving Time";
+        btnCalc.disabled = false;
+        document.getElementById("empty-state-box").style.display = "none";
+        document.getElementById("fetch-error-box").style.display = "flex";
+      });
   });
 
   // Reset Modal
-  btnShowReset.addEventListener('click', () => {
-    resetModal.style.display = 'flex';
+  btnShowReset.addEventListener("click", () => {
+    resetModal.style.display = "flex";
   });
 
-  btnCancelReset.addEventListener('click', () => {
-    resetModal.style.display = 'none';
+  btnCancelReset.addEventListener("click", () => {
+    resetModal.style.display = "none";
   });
 
-  btnConfirmReset.addEventListener('click', () => {
-    resetModal.style.display = 'none';
-    localStorage.removeItem('outly_employeeData');
+  btnConfirmReset.addEventListener("click", () => {
+    resetModal.style.display = "none";
+    localStorage.removeItem("outly_employeeData");
     checkEmployeeData();
   });
-  
+
   // Close modal on click outside
-  resetModal.addEventListener('click', (e) => {
-    if(e.target === resetModal) {
-      resetModal.style.display = 'none';
+  resetModal.addEventListener("click", (e) => {
+    if (e.target === resetModal) {
+      resetModal.style.display = "none";
     }
   });
 
   // Profile Dropdown Toggle
-  const btnProfileTrigger = document.getElementById('btn-profile-trigger');
-  const profileDropdown = document.getElementById('profile-dropdown');
-  
+  const btnProfileTrigger = document.getElementById("btn-profile-trigger");
+  const profileDropdown = document.getElementById("profile-dropdown");
+
   if (btnProfileTrigger && profileDropdown) {
-    btnProfileTrigger.addEventListener('click', (e) => {
+    btnProfileTrigger.addEventListener("click", (e) => {
       e.stopPropagation();
-      profileDropdown.classList.toggle('show');
+      profileDropdown.classList.toggle("show");
     });
 
-    document.addEventListener('click', (e) => {
+    document.addEventListener("click", (e) => {
       if (!profileDropdown.contains(e.target)) {
-        profileDropdown.classList.remove('show');
+        profileDropdown.classList.remove("show");
       }
     });
 
-    profileDropdown.querySelectorAll('.dropdown-item').forEach(item => {
-      item.addEventListener('click', () => {
-        profileDropdown.classList.remove('show');
+    profileDropdown.querySelectorAll(".dropdown-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        profileDropdown.classList.remove("show");
       });
     });
   }
 
   // Theme Toggle
-  const btnThemeToggle = document.getElementById('btn-theme-toggle');
+  const btnThemeToggle = document.getElementById("btn-theme-toggle");
   if (btnThemeToggle) {
-    btnThemeToggle.addEventListener('click', () => {
+    btnThemeToggle.addEventListener("click", () => {
       const root = document.documentElement;
-      const currentTheme = root.getAttribute('data-theme');
-      
-      if (currentTheme === 'dark') {
-        root.setAttribute('data-theme', 'light');
-      } else if (currentTheme === 'light') {
-        root.setAttribute('data-theme', 'dark');
+      const currentTheme = root.getAttribute("data-theme");
+
+      if (currentTheme === "dark") {
+        root.setAttribute("data-theme", "light");
+      } else if (currentTheme === "light") {
+        root.setAttribute("data-theme", "dark");
       } else {
         // If unset, detect system preference and toggle to the opposite
-        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        root.setAttribute('data-theme', prefersDark ? 'light' : 'dark');
+        const prefersDark =
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches;
+        root.setAttribute("data-theme", prefersDark ? "light" : "dark");
       }
     });
   }
 
   // Set default theme to light
-  document.documentElement.setAttribute('data-theme', 'light');
+  document.documentElement.setAttribute("data-theme", "light");
 
   // Local Storage Management
   function checkEmployeeData() {
-    const empStr = localStorage.getItem('outly_employeeData');
+    const empStr = localStorage.getItem("outly_employeeData");
     if (empStr) {
       const emp = JSON.parse(empStr);
       // Update header
-      const profileName = document.querySelector('.profile-name');
-      const profileAvatar = document.querySelector('.profile-avatar');
-      const displayEmpName = document.getElementById('display-emp-name');
-      const displayEmpCode = document.getElementById('display-emp-code');
-      
+      const profileName = document.querySelector(".profile-name");
+      const profileAvatar = document.querySelector(".profile-avatar");
+      const displayEmpName = document.getElementById("display-emp-name");
+      const displayEmpCode = document.getElementById("display-emp-code");
+
       if (profileName) profileName.textContent = emp.name;
-      if (profileAvatar) profileAvatar.textContent = emp.name.charAt(0).toUpperCase();
+      if (profileAvatar)
+        profileAvatar.textContent = emp.name.charAt(0).toUpperCase();
       if (displayEmpName) displayEmpName.textContent = emp.name;
       if (displayEmpCode) displayEmpCode.textContent = emp.code;
 
-      setUIState('default');
+      setUIState("default");
     } else {
-      setUIState('setup');
+      setUIState("setup");
     }
   }
 
