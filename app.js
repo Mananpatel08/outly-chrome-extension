@@ -747,8 +747,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const entry = data?.d?.listTimesheet?.[0];
 
-        console.log("RAW TimeEntry:", entry.TimeEntry);
-
         const REQUIRED = getRequiredMins(activeSeg);
 
         if (!entry) {
